@@ -3,63 +3,108 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Produk;
 use Illuminate\Http\Request;
 
 class ProdukController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        //
+        if(auth()->user->role == 'admin') {
+            $produks = Produk::all();
+            return view('pages.admin.produk.index', compact('produks'));
+        }
+        return redirect()->route('home');
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        //
+        if(auth()->user->role == 'admin') {
+            return view('pages.admin.produk.create');
+        }
+        return redirect()->route('home');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        //
+        if(auth()->user->role == 'admin') {
+            $request->validate([
+                'name' => 'required',
+                'deskripsi' => 'required',
+                'harga' => 'required|numeric',
+                'kategori' => 'required',
+                'gambar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+            ]);
+
+            $imageName = time().'.'.$request->gambar->extension();
+            $request->gambar->move(public_path('images'), $imageName);
+
+            Produk::create([
+                'name' => $request->name,
+                'deskripsi' => $request->deskripsi,
+                'harga' => $request->harga,
+                'kategori' => $request->kategori,
+                'gambar' => $imageName
+            ]);
+
+            return redirect()->route('produk.index')->with('success', 'Produk berhasil ditambahkan');
+        }
+        return redirect()->route('home');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function edit($id)
     {
-        //
+        if(auth()->user->role == 'admin') {
+            $produk = Produk::find($id);
+            return view('pages.admin.produk.edit', compact('produk'));
+        }
+        return redirect()->route('home');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(Request $request, $id)
     {
-        //
+        if(auth()->user->role == 'admin') {
+            $produk = Produk::find($id);
+
+            $request->validate([
+                'name' => 'required',
+                'deskripsi' => 'required',
+                'harga' => 'required|numeric',
+                'kategori' => 'required'
+            ]);
+
+            $updateData = [
+                'name' => $request->name,
+                'deskripsi' => $request->deskripsi,
+                'harga' => $request->harga,
+                'kategori' => $request->kategori
+            ];
+
+            // Jika ada gambar baru
+            if ($request->hasFile('gambar')) {
+                $request->validate([
+                    'gambar' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+                ]);
+
+                $imageName = time().'.'.$request->gambar->extension();
+                $request->gambar->move(public_path('images'), $imageName);
+                $updateData['gambar'] = $imageName;
+            }
+
+            $produk->update($updateData);
+
+            return redirect()->route('produk.index')->with('success', 'Produk berhasil diupdate');
+        }
+        return redirect()->route('home');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy($id)
     {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        if(auth()->user->role == 'admin') {
+            $produk = Produk::find($id);
+            $produk->delete();
+            return redirect()->route('produk.index')->with('success', 'Produk berhasil dihapus');
+        }
+        return redirect()->route('home');
     }
 }

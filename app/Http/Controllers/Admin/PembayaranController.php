@@ -3,63 +3,68 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pembayaran;
 use Illuminate\Http\Request;
 
 class PembayaranController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
+   public function index()
+   {
+       if(auth()->user->role == 'admin') {
+           // Load pembayaran dengan relasi pemesanan dan user
+           $pembayaran = Pembayaran::with(['pemesanan.user'])->get();
+           return view('pages.admin.pembayaran.index', compact('pembayaran'));
+       }
+       return redirect()->route('home');
+   }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+   public function show($id)
+   {
+       if(auth()->user->role == 'admin') {
+           // Load detail pembayaran
+           $pembayaran = Pembayaran::with(['pemesanan.user', 'pemesanan.detailPemesanan.produk'])->find($id);
+           return view('pages.admin.pembayaran.show', compact('pembayaran'));
+       }
+       return redirect()->route('home');
+   }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+   public function update(Request $request, $id)
+   {
+       if(auth()->user->role == 'admin') {
+           $request->validate([
+               'status' => 'required|in:pending,verified,rejected'
+           ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+           $pembayaran = Pembayaran::find($id);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+           // Update status pembayaran
+           $pembayaran->update([
+               'status' => $request->status
+           ]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
+           // Jika pembayaran diverifikasi, update status pemesanan jadi processing
+           if($request->status == 'verified') {
+               $pembayaran->pemesanan->update([
+                   'status' => 'processing'
+               ]);
+           }
+           // Jika pembayaran ditolak, update status pemesanan jadi cancelled
+           else if($request->status == 'rejected') {
+               $pembayaran->pemesanan->update([
+                   'status' => 'cancelled'
+               ]);
+           }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
+           return redirect()->route('pembayaran.index')
+               ->with('success', 'Status pembayaran berhasil diupdate');
+       }
+       return redirect()->route('home');
+   }
+
+   // Function yang tidak digunakan bisa dihapus
+   // public function create() {}
+   // public function store() {}
+   // public function edit() {}
+   // public function destroy() {}
 }
+    

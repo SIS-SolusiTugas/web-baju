@@ -3,63 +3,49 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pemesanan;
 use Illuminate\Http\Request;
 
 class PemesananController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
+   public function index()
+   {
+       if(auth()->user->role == 'admin') {
+           $pemesanans = Pemesanan::with(['user', 'detailPemesanan'])->get();
+           return view('pages.admin.pemesanan.index', compact('pemesanans'));
+       }
+       return redirect()->route('home');
+   }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+   public function show($id)
+   {
+       if(auth()->user->role == 'admin') {
+           $pemesanan = Pemesanan::with(['user', 'detailPemesanan.produk'])->find($id);
+           return view('pages.admin.pemesanan.show', compact('pemesanan'));
+       }
+       return redirect()->route('home');
+   }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+   public function update(Request $request, $id)
+   {
+       if(auth()->user->role == 'admin') {
+           $request->validate([
+               'status' => 'required|in:pending,processing,shipping,completed,cancelled'
+           ]);
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+           $pemesanan = Pemesanan::find($id);
+           $pemesanan->update([
+               'status' => $request->status
+           ]);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+           return redirect()->route('pemesanan.index')->with('success', 'Status pesanan berhasil diupdate');
+       }
+       return redirect()->route('home');
+   }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
+   // Function yang tidak digunakan bisa dihapus
+   // public function create(){}
+   // public function store(){}
+   // public function edit(){}
+   // public function destroy(){}
 }
