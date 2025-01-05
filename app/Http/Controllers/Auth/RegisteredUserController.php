@@ -31,7 +31,7 @@ class RegisteredUserController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:user'],  // Ubah ke tabel user
+            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:' . User::class],  // Ubah ke tabel user
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
@@ -39,18 +39,12 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'pelanggan', // Set default role sebagai pelanggan
         ]);
 
         event(new Registered($user));
 
         Auth::login($user);
 
-        // Redirect berdasarkan role
-        if($user->role === 'admin') {
-            return redirect()->route('admin.dashboard');
-        } else {
-            return redirect()->route('home'); // Atau route lain untuk pelanggan
-        }
+        return redirect(route('dashboard', absolute: false));
     }
 }
